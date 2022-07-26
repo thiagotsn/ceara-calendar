@@ -118,7 +118,9 @@ export class MatchToCalendarService implements IMatchToCalendarService {
   private matchStartDate(match: IMatch): IEventDateTime {
     if (match.fixture.status?.short === MatchesEnum.Status.TBD) {
       return {
-        date: moment(match.fixture.date).format("YYYY-MM-DD"),
+        date: moment(match.fixture.date)
+          .subtract(1, "day")
+          .format("YYYY-MM-DD"),
       };
     }
 
@@ -131,7 +133,9 @@ export class MatchToCalendarService implements IMatchToCalendarService {
   private matchEndDate(match: IMatch): IEventDateTime {
     if (match.fixture.status?.short === MatchesEnum.Status.TBD) {
       return {
-        date: moment(match.fixture.date).format("YYYY-MM-DD"),
+        date: moment(match.fixture.date)
+          .subtract(1, "day")
+          .format("YYYY-MM-DD"),
       };
     }
 

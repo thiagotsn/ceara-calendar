@@ -100,4 +100,8 @@ __azurite_db*__.json
 
 # Secret
 keys.json
+
+# Misc
 example.json
+commands.txt
+.DS_Store
