@@ -146,11 +146,18 @@ export class MatchToCalendarService implements IMatchToCalendarService {
   }
 
   private matchSummary(match: IMatch): string {
-    return match.fixture.status?.short === MatchesEnum.Status.FINISHED ||
+    if (
+      match.fixture.status?.short === MatchesEnum.Status.FINISHED ||
       match.fixture.status?.short ===
-        MatchesEnum.Status.FINISHED_AFTER_EXTRA_TIME ||
+        MatchesEnum.Status.FINISHED_AFTER_EXTRA_TIME
+    ) {
+      return `${match.teams.home.name} ${match.goals.home} X ${match.goals.away} ${match.teams.away.name}`;
+    } else if (
       match.fixture.status?.short === MatchesEnum.Status.FINISHED_AFTER_PENALTY
-      ? `${match.teams.home.name} ${match.goals.home} X ${match.goals.away} ${match.teams.away.name}`
-      : `${match.teams.home.name} X ${match.teams.away.name}`;
+    ) {
+      return `${match.teams.home.name} ${match.goals.home} (${match.score.penalty.home}) X (${match.score.penalty.away}) ${match.goals.away} ${match.teams.away.name}`;
+    }
+
+    return `${match.teams.home.name} X ${match.teams.away.name}`;
   }
 }

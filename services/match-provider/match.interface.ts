@@ -3,6 +3,7 @@ export interface IMatch {
   league: ILeague;
   teams: ITeams;
   goals: IGoals;
+  score: IScore;
 }
 
 interface IFixture {
@@ -46,6 +47,15 @@ interface ITeam {
 }
 
 interface IGoals {
+  home: number;
+  away: number;
+}
+
+interface IScore {
+  penalty: IPenalty;
+}
+
+interface IPenalty {
   home: number;
   away: number;
 }
