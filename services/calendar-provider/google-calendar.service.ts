@@ -42,10 +42,12 @@ export class GoogleCalenderService implements ICalendarProvider {
       location: event.location,
       description: event.description,
       start: {
+        date: event.start.date,
         dateTime: event.start.dateTime,
         timeZone: event.start.timeZone,
       },
       end: {
+        date: event.end.date,
         dateTime: event.end.dateTime,
         timeZone: event.end.timeZone,
       },
@@ -119,25 +121,29 @@ export class GoogleCalenderService implements ICalendarProvider {
 
   private mapEvents(events: calendar_v3.Schema$Event[]): IEvent[] {
     return events.map((event: calendar_v3.Schema$Event) => {
-      return {
-        id: event.id,
-        summary: event.summary,
-        description: event.description,
-        location: event.location,
-        start: {
-          date: event.start.date,
-          dateTime: event.start.dateTime,
-          timeZone: event.start.timeZone,
-        },
-        end: {
-          date: event.end.date,
-          dateTime: event.end.dateTime,
-          timeZone: event.end.timeZone,
-        },
-        source: {
-          title: event.source?.title,
-        },
-      };
+      return this.mapEvent(event);
     });
+  }
+
+  private mapEvent(event: calendar_v3.Schema$Event): IEvent {
+    return {
+      id: event.id,
+      summary: event.summary,
+      description: event.description,
+      location: event.location ?? "",
+      start: {
+        date: event.start.date,
+        dateTime: event.start.dateTime,
+        timeZone: event.start.timeZone,
+      },
+      end: {
+        date: event.end.date,
+        dateTime: event.end.dateTime,
+        timeZone: event.end.timeZone,
+      },
+      source: {
+        title: event.source?.title,
+      },
+    };
   }
 }

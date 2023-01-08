@@ -1,4 +1,7 @@
-import { concat } from 'lodash';
+import {
+  concat,
+  find,
+} from 'lodash';
 import * as moment from 'moment';
 
 import MatchesEnum from '../../shared/matches.enum';
@@ -56,9 +59,23 @@ export class MatchToCalendarService implements IMatchToCalendarService {
       concat(matches, matchesNextYear)
     );
 
+    const eventsInCalendar: IEvent[] = await this.calendarProvider.getEvents(
+      startDate,
+      endOfNextYear
+    );
+
     for (let index = 0; index < eventsToUpdate.length; index++) {
       const event = eventsToUpdate[index];
-      await this.calendarProvider.updateEvent(event);
+
+      const eventInCalendar: IEvent | undefined = find(eventsInCalendar, {
+        id: event.id,
+      });
+
+      if (eventInCalendar) {
+        await this.calendarProvider.updateEvent(event);
+      } else {
+        await this.calendarProvider.addEvent(event);
+      }
     }
   }
 
