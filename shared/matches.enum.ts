@@ -4,6 +4,7 @@ namespace MatchesEnum {
     FINISHED_AFTER_EXTRA_TIME = "AET",
     FINISHED_AFTER_PENALTY = "PEN",
     TBD = "TBD",
+    PST = "PST",
   }
 }
 

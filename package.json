@@ -10,15 +10,15 @@
     "test": "echo \"No tests yet...\""
   },
   "dependencies": {
-    "axios": "^0.27.2",
+    "axios": "^1.8.4",
     "fs": "^0.0.1-security",
-    "googleapis": "^39.2.0",
+    "googleapis": "^148.0.0",
     "lodash": "^4.17.21",
     "moment": "^2.29.4"
   },
   "devDependencies": {
     "@azure/functions": "^3.0.0",
     "@types/node": "16.x",
-    "typescript": "^4.0.0"
+    "typescript": "^5.8.2"
   }
 }

@@ -118,6 +118,8 @@ export class MatchToCalendarService implements IMatchToCalendarService {
   private matchDescription(match: IMatch): string {
     const description: string = `${
       match.fixture.status?.short === MatchesEnum.Status.TBD ? "TBD\n" : ""
+    }${
+      match.fixture.status?.short === MatchesEnum.Status.PST ? "Adiado\n" : ""
     }Campeonato: ${
       match.league?.name
     }\n\n\nCalendário desatualizado? Por favor, envie um email para calendarioceara@gmail.com`;
@@ -126,7 +128,10 @@ export class MatchToCalendarService implements IMatchToCalendarService {
   }
 
   private matchStartDate(match: IMatch): IEventDateTime {
-    if (match.fixture.status?.short === MatchesEnum.Status.TBD) {
+    if (
+      match.fixture.status?.short === MatchesEnum.Status.TBD ||
+      match.fixture.status?.short === MatchesEnum.Status.PST
+    ) {
       return {
         date: moment(match.fixture.date).format("YYYY-MM-DD"),
       };
@@ -139,7 +144,10 @@ export class MatchToCalendarService implements IMatchToCalendarService {
   }
 
   private matchEndDate(match: IMatch): IEventDateTime {
-    if (match.fixture.status?.short === MatchesEnum.Status.TBD) {
+    if (
+      match.fixture.status?.short === MatchesEnum.Status.TBD ||
+      match.fixture.status?.short === MatchesEnum.Status.PST
+    ) {
       return {
         date: moment(match.fixture.date).format("YYYY-MM-DD"),
       };
@@ -162,6 +170,8 @@ export class MatchToCalendarService implements IMatchToCalendarService {
       match.fixture.status?.short === MatchesEnum.Status.FINISHED_AFTER_PENALTY
     ) {
       return `${match.teams.home.name} ${match.goals.home} (${match.score.penalty.home}) X (${match.score.penalty.away}) ${match.goals.away} ${match.teams.away.name}`;
+    } else if (match.fixture.status?.short === MatchesEnum.Status.PST) {
+      return `(ADIADO) ${match.teams.home.name} X ${match.teams.away.name}`;
     }
 
     return `${match.teams.home.name} X ${match.teams.away.name}`;
