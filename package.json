@@ -1,23 +1,27 @@
 {
   "name": "ceara-calendar",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "",
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
-    "prestart": "npm run build",
+    "clean": "rimraf dist",
+    "prestart": "npm run clean && npm run build",
     "start": "func start",
     "test": "echo \"No tests yet...\""
   },
   "dependencies": {
+    "@azure/functions": "^4.7.0",
     "axios": "^1.8.4",
     "googleapis": "^148.0.0",
     "lodash": "^4.17.21",
     "moment": "^2.29.4"
   },
   "devDependencies": {
-    "@azure/functions": "^3.0.0",
     "@types/node": "^22.13.13",
+    "azure-functions-core-tools": "^4.0.6821",
+    "rimraf": "^6.0.1",
     "typescript": "^5.8.2"
-  }
+  },
+  "main": "dist/src/functions/*.js"
 }
