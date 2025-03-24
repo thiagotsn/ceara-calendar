@@ -6,12 +6,19 @@
   "debug.internalConsoleOptions": "neverOpen",
   "azureFunctions.preDeployTask": "npm prune (functions)",
   "cSpell.words": [
+    "ABANDONADO",
     "Adiado",
     "Calendário",
     "Campeonato",
+    "CANCELADO",
     "CEARA",
+    "DERROTA",
     "desatualizado",
     "envie",
-    "rapidapi"
+    "INTERROMPIDO",
+    "rapidapi",
+    "SUSP",
+    "SUSPENSO",
+    "TÉCNICA"
   ]
 }

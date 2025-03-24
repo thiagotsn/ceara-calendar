@@ -1,9 +1,9 @@
 import { concat, find } from "lodash";
 import * as moment from "moment";
 
-import MatchesEnum from "../../shared/matches.enum";
 import { ICalendarProvider } from "../calendar-provider/calendar-provider.interface";
-import { IEvent, IEventDateTime } from "../calendar-provider/event.interface";
+import { Event } from "../calendar-provider/event.entity";
+import { IEvent } from "../calendar-provider/event.interface";
 import { IMatchProvider } from "../match-provider/match-provider.interface";
 import { IMatch } from "../match-provider/match.interface";
 import { IMatchToCalendarService } from "./match-to-calendar.interface";
@@ -48,8 +48,8 @@ export class MatchToCalendarService implements IMatchToCalendarService {
         endOfNextYear
       );
 
-    const eventsToUpdate: IEvent[] = this.mapMatchesToEvents(
-      concat(matches, matchesNextYear)
+    const eventsToUpdate: IEvent[] = concat(matches, matchesNextYear).map(
+      (match) => Event.create(match)
     );
 
     const eventsInCalendar: IEvent[] = await this.calendarProvider.getEvents(
@@ -86,94 +86,11 @@ export class MatchToCalendarService implements IMatchToCalendarService {
       currentYear
     );
 
-    const eventsToAdd: IEvent[] = this.mapMatchesToEvents(matches);
+    const eventsToAdd: Event[] = matches.map((match) => Event.create(match));
 
     for (let index = 0; index < eventsToAdd.length; index++) {
       const event = eventsToAdd[index];
       await this.calendarProvider.updateEvent(event);
     }
-  }
-
-  private mapMatchesToEvents(matches: IMatch[]): IEvent[] {
-    let events: IEvent[] = [];
-
-    events = matches.map((match) => {
-      const event: IEvent = {
-        id: match.fixture.id?.toString(),
-        summary: this.matchSummary(match),
-        description: this.matchDescription(match),
-        location: match.fixture.venue?.name,
-        start: this.matchStartDate(match),
-        end: this.matchEndDate(match),
-        source: {
-          title: match.fixture.status?.short,
-        },
-      };
-      return event;
-    });
-
-    return events;
-  }
-
-  private matchDescription(match: IMatch): string {
-    const description: string = `${
-      match.fixture.status?.short === MatchesEnum.Status.TBD ? "TBD\n" : ""
-    }${
-      match.fixture.status?.short === MatchesEnum.Status.PST ? "Adiado\n" : ""
-    }Campeonato: ${
-      match.league?.name
-    }\n\n\nCalendário desatualizado? Por favor, envie um email para calendarioceara@gmail.com`;
-
-    return description;
-  }
-
-  private matchStartDate(match: IMatch): IEventDateTime {
-    if (
-      match.fixture.status?.short === MatchesEnum.Status.TBD ||
-      match.fixture.status?.short === MatchesEnum.Status.PST
-    ) {
-      return {
-        date: moment(match.fixture.date).format("YYYY-MM-DD"),
-      };
-    }
-
-    return {
-      dateTime: moment(match.fixture.date).toISOString(),
-      timeZone: "UTC",
-    };
-  }
-
-  private matchEndDate(match: IMatch): IEventDateTime {
-    if (
-      match.fixture.status?.short === MatchesEnum.Status.TBD ||
-      match.fixture.status?.short === MatchesEnum.Status.PST
-    ) {
-      return {
-        date: moment(match.fixture.date).format("YYYY-MM-DD"),
-      };
-    }
-
-    return {
-      dateTime: moment(match.fixture.date).add(2, "hours").toISOString(),
-      timeZone: "UTC",
-    };
-  }
-
-  private matchSummary(match: IMatch): string {
-    if (
-      match.fixture.status?.short === MatchesEnum.Status.FINISHED ||
-      match.fixture.status?.short ===
-        MatchesEnum.Status.FINISHED_AFTER_EXTRA_TIME
-    ) {
-      return `${match.teams.home.name} ${match.goals.home} X ${match.goals.away} ${match.teams.away.name}`;
-    } else if (
-      match.fixture.status?.short === MatchesEnum.Status.FINISHED_AFTER_PENALTY
-    ) {
-      return `${match.teams.home.name} ${match.goals.home} (${match.score.penalty.home}) X (${match.score.penalty.away}) ${match.goals.away} ${match.teams.away.name}`;
-    } else if (match.fixture.status?.short === MatchesEnum.Status.PST) {
-      return `(ADIADO) ${match.teams.home.name} X ${match.teams.away.name}`;
-    }
-
-    return `${match.teams.home.name} X ${match.teams.away.name}`;
   }
 }

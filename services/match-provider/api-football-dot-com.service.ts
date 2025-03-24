@@ -1,8 +1,8 @@
-import axios from 'axios';
-import * as moment from 'moment';
+import axios from "axios";
+import * as moment from "moment";
 
-import { IMatchProvider } from './match-provider.interface';
-import { IMatch } from './match.interface';
+import { IMatchProvider } from "./match-provider.interface";
+import { IMatch } from "./match.interface";
 
 export class ApiFootballDotComService implements IMatchProvider {
   async getMatches(team: number, season: number): Promise<IMatch[]> {
