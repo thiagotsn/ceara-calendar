@@ -1,20 +1,12 @@
-import {
-  concat,
-  find,
-} from 'lodash';
-import * as moment from 'moment';
+import { concat, find } from "lodash";
+import * as moment from "moment";
 
-import MatchesEnum from '../../shared/matches.enum';
-import {
-  ICalendarProvider,
-} from '../calendar-provider/calendar-provider.interface';
-import {
-  IEvent,
-  IEventDateTime,
-} from '../calendar-provider/event.interface';
-import { IMatchProvider } from '../match-provider/match-provider.interface';
-import { IMatch } from '../match-provider/match.interface';
-import { IMatchToCalendarService } from './match-to-calendar.interface';
+import MatchesEnum from "../../shared/matches.enum";
+import { ICalendarProvider } from "../calendar-provider/calendar-provider.interface";
+import { IEvent, IEventDateTime } from "../calendar-provider/event.interface";
+import { IMatchProvider } from "../match-provider/match-provider.interface";
+import { IMatch } from "../match-provider/match.interface";
+import { IMatchToCalendarService } from "./match-to-calendar.interface";
 
 export class MatchToCalendarService implements IMatchToCalendarService {
   private calendarProvider: ICalendarProvider;
@@ -31,6 +23,7 @@ export class MatchToCalendarService implements IMatchToCalendarService {
   async updateCalendar(team: number): Promise<void> {
     const currentYear: number = moment().year();
     const startDate: Date = moment().subtract(1, "month").toDate();
+    const startOfCurrentYear: Date = moment().startOf("year").toDate();
     const endOfCurrentYear: Date = moment().endOf("year").toDate();
 
     const nextYear: number = currentYear + 1;
@@ -60,7 +53,7 @@ export class MatchToCalendarService implements IMatchToCalendarService {
     );
 
     const eventsInCalendar: IEvent[] = await this.calendarProvider.getEvents(
-      startDate,
+      startOfCurrentYear,
       endOfNextYear
     );
 
