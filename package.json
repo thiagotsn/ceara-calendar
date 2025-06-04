@@ -21,7 +21,7 @@
     "@types/node": "^22.13.13",
     "azure-functions-core-tools": "^4.0.6821",
     "rimraf": "^6.0.1",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.3"
   },
   "main": "dist/src/functions/*.js"
 }
