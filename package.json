@@ -19,7 +19,7 @@
   },
   "devDependencies": {
     "@types/node": "^24.0.8",
-    "azure-functions-core-tools": "^4.0.7317",
+    "azure-functions-core-tools": "^4.1.0",
     "rimraf": "^6.0.1",
     "typescript": "^5.8.3"
   },
