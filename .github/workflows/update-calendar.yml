@@ -1,0 +1,39 @@
+name: Update Calendar
+
+on:
+  schedule:
+    - cron: "30 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: ceara-calendar
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm run build
+
+      - run: pnpm run update-calendar
+        env:
+          API_FOOTBALL_ENDPOINT: ${{ secrets.API_FOOTBALL_ENDPOINT }}
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          CEARA_CALENDAR_ID: ${{ secrets.CEARA_CALENDAR_ID }}
+          CEARA_GOOGLE_KEYS_JSON: ${{ secrets.CEARA_GOOGLE_KEYS_JSON }}
+          CEARA_GOOGLE_SERVICE_ACCOUNT: ${{ secrets.CEARA_GOOGLE_SERVICE_ACCOUNT }}
+          WORLD_CUP_2026_CALENDAR_ID: ${{ secrets.WORLD_CUP_2026_CALENDAR_ID }}
+          WORLD_CUP_2026_GOOGLE_KEYS_JSON: ${{ secrets.WORLD_CUP_2026_GOOGLE_KEYS_JSON }}
+          WORLD_CUP_2026_GOOGLE_SERVICE_ACCOUNT: ${{ secrets.WORLD_CUP_2026_GOOGLE_SERVICE_ACCOUNT }}

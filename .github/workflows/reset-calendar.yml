@@ -1,0 +1,56 @@
+name: Reset Calendar
+
+on:
+  workflow_dispatch:
+    inputs:
+      calendar:
+        description: "Which calendar to reset"
+        required: true
+        type: choice
+        options:
+          - ceara
+          - world-cup-2026
+      confirm:
+        description: 'Type "reset" to confirm deletion of every event in the selected calendar'
+        required: true
+        default: ""
+
+concurrency:
+  group: ceara-calendar
+  cancel-in-progress: false
+
+jobs:
+  reset:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Guard against accidental runs
+        if: ${{ inputs.confirm != 'reset' }}
+        run: |
+          echo "Refusing to run: the 'confirm' input must be exactly 'reset'." >&2
+          exit 1
+
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm run build
+
+      - run: pnpm run reset-calendar
+        env:
+          CALENDAR_KEY: ${{ inputs.calendar }}
+          API_FOOTBALL_ENDPOINT: ${{ secrets.API_FOOTBALL_ENDPOINT }}
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          CEARA_CALENDAR_ID: ${{ secrets.CEARA_CALENDAR_ID }}
+          CEARA_GOOGLE_KEYS_JSON: ${{ secrets.CEARA_GOOGLE_KEYS_JSON }}
+          CEARA_GOOGLE_SERVICE_ACCOUNT: ${{ secrets.CEARA_GOOGLE_SERVICE_ACCOUNT }}
+          WORLD_CUP_2026_CALENDAR_ID: ${{ secrets.WORLD_CUP_2026_CALENDAR_ID }}
+          WORLD_CUP_2026_GOOGLE_KEYS_JSON: ${{ secrets.WORLD_CUP_2026_GOOGLE_KEYS_JSON }}
+          WORLD_CUP_2026_GOOGLE_SERVICE_ACCOUNT: ${{ secrets.WORLD_CUP_2026_GOOGLE_SERVICE_ACCOUNT }}

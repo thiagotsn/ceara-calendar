@@ -1,48 +1,45 @@
-import axios from "axios";
-import * as moment from "moment";
+import dayjs = require("dayjs");
 
-import { IMatchProvider } from "./match-provider.interface";
+import { FixturesQuery, IMatchProvider } from "./match-provider.interface";
 import { IMatch } from "./match.interface";
 
 export class ApiFootballDotComService implements IMatchProvider {
-  async getMatches(team: number, season: number): Promise<IMatch[]> {
-    const result = await axios.get(
-      `https://${process.env["api-football-endpoint"]}/fixtures?season=${season}&team=${team}`,
+  async getFixtures(query: FixturesQuery): Promise<IMatch[]> {
+    const params: Record<string, string> = {
+      season: String(query.season),
+    };
+    if (query.team !== undefined) {
+      params.team = String(query.team);
+    }
+    if (query.league !== undefined) {
+      params.league = String(query.league);
+    }
+    if (query.from) {
+      params.from = dayjs(query.from).format("YYYY-MM-DD");
+    }
+    if (query.to) {
+      params.to = dayjs(query.to).format("YYYY-MM-DD");
+    }
+
+    const endpoint = process.env["API_FOOTBALL_ENDPOINT"] ?? "";
+    const queryString = new URLSearchParams(params).toString();
+    const response = await fetch(
+      `https://${endpoint}/fixtures?${queryString}`,
       {
         headers: {
-          "x-rapidapi-key": process.env["api-football-key"],
-          "x-rapidapi-host": process.env["api-football-endpoint"],
+          "x-rapidapi-key": process.env["API_FOOTBALL_KEY"] ?? "",
+          "x-rapidapi-host": endpoint,
         },
       }
     );
 
-    const matches: IMatch[] = result.data.response;
+    if (!response.ok) {
+      throw new Error(
+        `API-Football request failed: ${response.status} ${response.statusText}`
+      );
+    }
 
-    return matches;
-  }
-
-  async getMatchesFromRange(
-    team: number,
-    season: number,
-    startDate: Date,
-    endDate: Date
-  ): Promise<IMatch[]> {
-    const result = await axios.get(
-      `https://${
-        process.env["api-football-endpoint"]
-      }/fixtures?season=${season}&from=${moment(startDate).format(
-        "YYYY-MM-DD"
-      )}&to=${moment(endDate).format("YYYY-MM-DD")}&team=${team}`,
-      {
-        headers: {
-          "x-rapidapi-key": process.env["api-football-key"],
-          "x-rapidapi-host": process.env["api-football-endpoint"],
-        },
-      }
-    );
-
-    const matches: IMatch[] = result.data.response;
-
-    return matches;
+    const body = (await response.json()) as { response: IMatch[] };
+    return body.response;
   }
 }

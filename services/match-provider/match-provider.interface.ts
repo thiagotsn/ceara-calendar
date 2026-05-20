@@ -1,11 +1,13 @@
 import { IMatch } from './match.interface';
 
+export interface FixturesQuery {
+  season: number;
+  team?: number;
+  league?: number;
+  from?: Date;
+  to?: Date;
+}
+
 export interface IMatchProvider {
-  getMatches(team: number, season: number): Promise<IMatch[]>;
-  getMatchesFromRange(
-    team: number,
-    season: number,
-    startDate: Date,
-    endDate: Date
-  ): Promise<IMatch[]>;
+  getFixtures(query: FixturesQuery): Promise<IMatch[]>;
 }

@@ -1,12 +1,18 @@
-import { concat, find } from "lodash";
-import * as moment from "moment";
+import dayjs = require("dayjs");
 
+import { CalendarConfig, MatchSource } from "../../shared/calendars";
 import { ICalendarProvider } from "../calendar-provider/calendar-provider.interface";
 import { Event } from "../calendar-provider/event.entity";
 import { IEvent } from "../calendar-provider/event.interface";
 import { IMatchProvider } from "../match-provider/match-provider.interface";
 import { IMatch } from "../match-provider/match.interface";
 import { IMatchToCalendarService } from "./match-to-calendar.interface";
+
+interface SyncWindow {
+  matches: IMatch[];
+  existingEventsStart: Date;
+  existingEventsEnd: Date;
+}
 
 export class MatchToCalendarService implements IMatchToCalendarService {
   private calendarProvider: ICalendarProvider;
@@ -20,49 +26,22 @@ export class MatchToCalendarService implements IMatchToCalendarService {
     this.matchProvider = matchProvider;
   }
 
-  async updateCalendar(team: number): Promise<void> {
-    const currentYear: number = moment().year();
-    const startDate: Date = moment().subtract(1, "month").toDate();
-    const startOfCurrentYear: Date = moment().startOf("year").toDate();
-    const endOfCurrentYear: Date = moment().endOf("year").toDate();
+  async updateCalendar(config: CalendarConfig): Promise<void> {
+    const window = await this.fetchSyncWindow(config.source);
 
-    const nextYear: number = currentYear + 1;
-    const startOfNextYear: Date = moment()
-      .startOf("year")
-      .add(1, "year")
-      .toDate();
-    const endOfNextYear: Date = moment().endOf("year").add(1, "year").toDate();
-
-    const matches: IMatch[] = await this.matchProvider.getMatchesFromRange(
-      team,
-      currentYear,
-      startDate,
-      endOfCurrentYear
-    );
-
-    const matchesNextYear: IMatch[] =
-      await this.matchProvider.getMatchesFromRange(
-        team,
-        nextYear,
-        startOfNextYear,
-        endOfNextYear
-      );
-
-    const eventsToUpdate: IEvent[] = concat(matches, matchesNextYear).map(
-      (match) => Event.create(match)
+    const eventsToUpdate: IEvent[] = window.matches.map((match) =>
+      Event.create(match)
     );
 
     const eventsInCalendar: IEvent[] = await this.calendarProvider.getEvents(
-      startOfCurrentYear,
-      endOfNextYear
+      window.existingEventsStart,
+      window.existingEventsEnd
     );
 
-    for (let index = 0; index < eventsToUpdate.length; index++) {
-      const event = eventsToUpdate[index];
-
-      const eventInCalendar: IEvent | undefined = find(eventsInCalendar, {
-        id: event.id,
-      });
+    for (const event of eventsToUpdate) {
+      const eventInCalendar: IEvent | undefined = eventsInCalendar.find(
+        (e) => e.id === event.id
+      );
 
       if (eventInCalendar) {
         await this.calendarProvider.updateEvent(event);
@@ -72,25 +51,82 @@ export class MatchToCalendarService implements IMatchToCalendarService {
     }
   }
 
-  async resetCalendar(team: number): Promise<void> {
+  async resetCalendar(config: CalendarConfig): Promise<void> {
     const events: IEvent[] = await this.calendarProvider.getAllEvents();
 
-    for (let index = 0; index < events.length; index++) {
-      const event = events[index];
+    for (const event of events) {
       await this.calendarProvider.deleteEvent(event.id);
     }
 
-    const currentYear = moment().year();
-    const matches: IMatch[] = await this.matchProvider.getMatches(
-      team,
-      currentYear
+    const matches: IMatch[] = await this.fetchCurrentSeasonMatches(
+      config.source
     );
 
     const eventsToAdd: Event[] = matches.map((match) => Event.create(match));
 
-    for (let index = 0; index < eventsToAdd.length; index++) {
-      const event = eventsToAdd[index];
+    for (const event of eventsToAdd) {
       await this.calendarProvider.updateEvent(event);
     }
+  }
+
+  private async fetchSyncWindow(source: MatchSource): Promise<SyncWindow> {
+    if (source.kind === "team") {
+      const currentYear = dayjs().year();
+      const startDate = dayjs().subtract(1, "month").toDate();
+      const startOfCurrentYear = dayjs().startOf("year").toDate();
+      const endOfCurrentYear = dayjs().endOf("year").toDate();
+
+      const nextYear = currentYear + 1;
+      const startOfNextYear = dayjs().startOf("year").add(1, "year").toDate();
+      const endOfNextYear = dayjs().endOf("year").add(1, "year").toDate();
+
+      const matchesCurrent = await this.matchProvider.getFixtures({
+        team: source.teamId,
+        season: currentYear,
+        from: startDate,
+        to: endOfCurrentYear,
+      });
+      const matchesNext = await this.matchProvider.getFixtures({
+        team: source.teamId,
+        season: nextYear,
+        from: startOfNextYear,
+        to: endOfNextYear,
+      });
+
+      return {
+        matches: [...matchesCurrent, ...matchesNext],
+        existingEventsStart: startOfCurrentYear,
+        existingEventsEnd: endOfNextYear,
+      };
+    }
+
+    const matches = await this.matchProvider.getFixtures({
+      league: source.leagueId,
+      season: source.season,
+    });
+
+    return {
+      matches,
+      existingEventsStart: dayjs(`${source.season}-01-01`)
+        .startOf("year")
+        .toDate(),
+      existingEventsEnd: dayjs(`${source.season}-01-01`).endOf("year").toDate(),
+    };
+  }
+
+  private async fetchCurrentSeasonMatches(
+    source: MatchSource
+  ): Promise<IMatch[]> {
+    if (source.kind === "team") {
+      return this.matchProvider.getFixtures({
+        team: source.teamId,
+        season: dayjs().year(),
+      });
+    }
+
+    return this.matchProvider.getFixtures({
+      league: source.leagueId,
+      season: source.season,
+    });
   }
 }

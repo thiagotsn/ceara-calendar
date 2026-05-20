@@ -1,21 +1,26 @@
-import {
-  calendar_v3,
-  google,
-} from 'googleapis';
-import * as path from 'path';
+import { calendar_v3, google } from 'googleapis';
 
-import TeamsEnum from '../../shared/teams.enum';
+import { ServiceAccountKeys } from '../../shared/calendars';
 import { ICalendarProvider } from './calendar-provider.interface';
 import { IEvent } from './event.interface';
 
+export interface GoogleCalendarOptions {
+  calendarId: string;
+  keys: ServiceAccountKeys;
+  serviceAccount?: string;
+}
+
 export class GoogleCalenderService implements ICalendarProvider {
   private calendar: calendar_v3.Calendar;
+  private calendarId: string;
 
-  private constructor() {}
+  private constructor(calendarId: string) {
+    this.calendarId = calendarId;
+  }
 
   async getAllEvents(): Promise<IEvent[]> {
     const result = await this.calendar.events.list({
-      calendarId: TeamsEnum.TeamCalendar[TeamsEnum.Team.CEARA],
+      calendarId: this.calendarId,
     });
 
     const events: IEvent[] = this.mapEvents(result.data.items);
@@ -25,7 +30,7 @@ export class GoogleCalenderService implements ICalendarProvider {
 
   async getEvents(startDate: Date, endDate: Date): Promise<IEvent[]> {
     const result = await this.calendar.events.list({
-      calendarId: TeamsEnum.TeamCalendar[TeamsEnum.Team.CEARA],
+      calendarId: this.calendarId,
       timeMin: startDate.toISOString(),
       timeMax: endDate.toISOString(),
     });
@@ -54,7 +59,7 @@ export class GoogleCalenderService implements ICalendarProvider {
     };
 
     const result = await this.calendar.events.insert({
-      calendarId: TeamsEnum.TeamCalendar[TeamsEnum.Team.CEARA],
+      calendarId: this.calendarId,
       requestBody: eventToAdd,
     });
 
@@ -80,7 +85,7 @@ export class GoogleCalenderService implements ICalendarProvider {
     };
 
     const result = await this.calendar.events.update({
-      calendarId: TeamsEnum.TeamCalendar[TeamsEnum.Team.CEARA],
+      calendarId: this.calendarId,
       requestBody: eventToUpdate,
       eventId: event.id,
     });
@@ -89,28 +94,34 @@ export class GoogleCalenderService implements ICalendarProvider {
   }
 
   async deleteEvent(eventId: string): Promise<void> {
-    const result = await this.calendar.events.delete({
-      calendarId: TeamsEnum.TeamCalendar[TeamsEnum.Team.CEARA],
+    await this.calendar.events.delete({
+      calendarId: this.calendarId,
       eventId: eventId,
     });
   }
 
-  public static async create(): Promise<GoogleCalenderService> {
-    const googleCalendarService = new GoogleCalenderService();
+  public static async create(
+    opts: GoogleCalendarOptions
+  ): Promise<GoogleCalenderService> {
+    const service = new GoogleCalenderService(opts.calendarId);
 
-    const authClient = await this.authenticate();
-    googleCalendarService.calendar = google.calendar({
+    const authClient = await this.authenticate(opts.keys, opts.serviceAccount);
+    service.calendar = google.calendar({
       version: "v3",
       auth: authClient,
     });
 
-    return googleCalendarService;
+    return service;
   }
 
-  private static async authenticate(): Promise<any> {
+  private static async authenticate(
+    keys: ServiceAccountKeys,
+    serviceAccount: string | undefined
+  ): Promise<any> {
     const authClient = new google.auth.JWT({
-      subject: process.env["google-service-account"],
-      keyFile: path.join(__dirname, "../../../keys.json"),
+      subject: serviceAccount || undefined,
+      email: keys.client_email,
+      key: keys.private_key,
       scopes: ["https://www.googleapis.com/auth/calendar"],
     });
 
