@@ -6,6 +6,11 @@ export interface FixturesQuery {
   league?: number;
   from?: Date;
   to?: Date;
+
+  // ESPN-specific identifiers. Ignored by API-Football.
+  espnTeamId?: number;
+  espnPath?: string;
+  espnDates?: string;
 }
 
 export interface IMatchProvider {

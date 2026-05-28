@@ -82,12 +82,14 @@ export class MatchToCalendarService implements IMatchToCalendarService {
 
       const matchesCurrent = await this.matchProvider.getFixtures({
         team: source.teamId,
+        espnTeamId: source.espnTeamId,
         season: currentYear,
         from: startDate,
         to: endOfCurrentYear,
       });
       const matchesNext = await this.matchProvider.getFixtures({
         team: source.teamId,
+        espnTeamId: source.espnTeamId,
         season: nextYear,
         from: startOfNextYear,
         to: endOfNextYear,
@@ -103,6 +105,8 @@ export class MatchToCalendarService implements IMatchToCalendarService {
     const matches = await this.matchProvider.getFixtures({
       league: source.leagueId,
       season: source.season,
+      espnPath: source.espnPath,
+      espnDates: source.espnDates,
     });
 
     return {
@@ -120,6 +124,7 @@ export class MatchToCalendarService implements IMatchToCalendarService {
     if (source.kind === "team") {
       return this.matchProvider.getFixtures({
         team: source.teamId,
+        espnTeamId: source.espnTeamId,
         season: dayjs().year(),
       });
     }
@@ -127,6 +132,8 @@ export class MatchToCalendarService implements IMatchToCalendarService {
     return this.matchProvider.getFixtures({
       league: source.leagueId,
       season: source.season,
+      espnPath: source.espnPath,
+      espnDates: source.espnDates,
     });
   }
 }

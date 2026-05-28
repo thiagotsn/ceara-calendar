@@ -512,6 +512,52 @@ const PT_NAME_BY_KEY: Record<string, string> = {
   "northern ireland": "Irlanda do Norte",
 };
 
+// FIFA 3-letter codes → ISO Alpha-2. Covers the 48 FIFA World Cup 2026 teams
+// (ESPN's `competitor.team.abbreviation` field). UK constituents are handled
+// inline in `flagByCode` because they need tag-sequence emoji.
+const ISO_ALPHA2_BY_CODE: Record<string, string> = {
+  ALG: "DZ", ARG: "AR", AUS: "AU", AUT: "AT", BEL: "BE",
+  BIH: "BA", BRA: "BR", CAN: "CA", CIV: "CI", COD: "CD",
+  COL: "CO", CPV: "CV", CRO: "HR", CUW: "CW", CZE: "CZ",
+  ECU: "EC", EGY: "EG", ESP: "ES", FRA: "FR", GER: "DE",
+  GHA: "GH", HAI: "HT", IRN: "IR", IRQ: "IQ", JOR: "JO",
+  JPN: "JP", KOR: "KR", KSA: "SA", MAR: "MA", MEX: "MX",
+  NED: "NL", NOR: "NO", NZL: "NZ", PAN: "PA", PAR: "PY",
+  POR: "PT", QAT: "QA", RSA: "ZA", SEN: "SN", SUI: "CH",
+  SWE: "SE", TUN: "TN", TUR: "TR", URU: "UY", USA: "US",
+  UZB: "UZ",
+};
+
+const PT_NAME_BY_CODE: Record<string, string> = {
+  ALG: "Argélia", ARG: "Argentina", AUS: "Austrália", AUT: "Áustria",
+  BEL: "Bélgica", BIH: "Bósnia e Herzegovina", BRA: "BRASIL",
+  CAN: "Canadá", CIV: "Costa do Marfim", COD: "República Democrática do Congo",
+  COL: "Colômbia", CPV: "Cabo Verde", CRO: "Croácia", CUW: "Curaçao",
+  CZE: "Tchéquia", ECU: "Equador", EGY: "Egito", ENG: "Inglaterra",
+  ESP: "Espanha", FRA: "França", GER: "Alemanha", GHA: "Gana",
+  HAI: "Haiti", IRN: "Irã", IRQ: "Iraque", JOR: "Jordânia",
+  JPN: "Japão", KOR: "Coreia do Sul", KSA: "Arábia Saudita",
+  MAR: "Marrocos", MEX: "México", NED: "Países Baixos", NOR: "Noruega",
+  NZL: "Nova Zelândia", PAN: "Panamá", PAR: "Paraguai", POR: "Portugal",
+  QAT: "Catar", RSA: "África do Sul", SCO: "Escócia", SEN: "Senegal",
+  SUI: "Suíça", SWE: "Suécia", TUN: "Tunísia", TUR: "Turquia",
+  URU: "Uruguai", USA: "Estados Unidos", UZB: "Uzbequistão",
+};
+
+// ESPN exposes placeholder "teams" in the WC bracket when participants
+// aren't yet decided (Group A Winner, Round of 16 1 Winner, Semifinal 1
+// Loser, Third Place Group A/B/C/D/F, …). Translate to pt-BR.
+const PLACEHOLDER_PATTERNS: Array<[RegExp, (m: RegExpMatchArray) => string]> = [
+  [/^Group ([A-L]) Winner$/, (m) => `Vencedor do Grupo ${m[1]}`],
+  [/^Group ([A-L]) 2nd Place$/, (m) => `2º do Grupo ${m[1]}`],
+  [/^Round of 32 (\d+) Winner$/, (m) => `Vencedor do Jogo ${m[1]} das 16-avos`],
+  [/^Round of 16 (\d+) Winner$/, (m) => `Vencedor do Jogo ${m[1]} das Oitavas`],
+  [/^Quarterfinal (\d+) Winner$/, (m) => `Vencedor da Quartas ${m[1]}`],
+  [/^Semifinal (\d+) Winner$/, (m) => `Vencedor da Semifinal ${m[1]}`],
+  [/^Semifinal (\d+) Loser$/, (m) => `Perdedor da Semifinal ${m[1]}`],
+  [/^Third Place Group (.+)$/, (m) => `3º do Grupo ${m[1]}`],
+];
+
 function alpha2ToFlag(alpha2: string): string {
   const codePoints = Array.from(alpha2.toUpperCase()).map(
     (c) => 0x1f1a5 + c.charCodeAt(0)
@@ -528,9 +574,40 @@ export function flagForCountry(name: string | null | undefined): string {
   return alpha2 ? alpha2ToFlag(alpha2) : "";
 }
 
+export function flagByCode(code: string | null | undefined): string {
+  if (!code) return "";
+  const key = code.trim().toUpperCase();
+  if (!key) return "";
+  if (key === "ENG") return SPECIAL_FLAGS["england"];
+  if (key === "SCO") return SPECIAL_FLAGS["scotland"];
+  if (key === "WAL") return SPECIAL_FLAGS["wales"];
+  if (key === "NIR") return SPECIAL_FLAGS["northern ireland"];
+  const alpha2 = ISO_ALPHA2_BY_CODE[key];
+  return alpha2 ? alpha2ToFlag(alpha2) : "";
+}
+
 export function countryNamePt(name: string | null | undefined): string {
   if (!name) return "";
   const key = name.trim().toLowerCase();
   if (!key) return name;
   return PT_NAME_BY_KEY[key] ?? name;
+}
+
+export function countryNameByCode(code: string | null | undefined): string {
+  if (!code) return "";
+  const key = code.trim().toUpperCase();
+  if (!key) return "";
+  return PT_NAME_BY_CODE[key] ?? "";
+}
+
+export function translateKnockoutPlaceholder(
+  name: string | null | undefined
+): string {
+  if (!name) return "";
+  const trimmed = name.trim();
+  for (const [re, build] of PLACEHOLDER_PATTERNS) {
+    const m = trimmed.match(re);
+    if (m) return build(m);
+  }
+  return "";
 }

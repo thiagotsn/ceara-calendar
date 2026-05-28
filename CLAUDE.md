@@ -78,10 +78,27 @@ scripts/{update,reset}-calendar.ts
   └── CalendarConfig from shared/calendars.ts
         └── MatchToCalendarService (services/match-to-calendar)
               ├── ICalendarProvider  ← GoogleCalenderService(calendarId) (services/calendar-provider)
-              └── IMatchProvider     ← ApiFootballDotComService (services/match-provider)
+              └── IMatchProvider     ← EspnService (services/match-provider)
 ```
 
 `MatchToCalendarService.updateCalendar(config)` and `resetCalendar(config)` dispatch on `config.source.kind`. The Google service takes the calendar ID at construction (`GoogleCalenderService.create(calendarId)`) — no more hidden coupling to a single calendar.
+
+### Match provider — active vs. dormant
+
+The active provider is **ESPN** (`EspnService`, `services/match-provider/espn.service.ts`), which uses ESPN's free, unauthenticated soccer endpoints (`site.api.espn.com`). No env vars or secrets are needed.
+
+`ApiFootballDotComService` is kept in the repo as a dormant fallback in case the API-Football account is reinstated. Reverting is a single-line swap in both scripts:
+
+```ts
+// scripts/{update,reset}-calendar.ts
+const matchProvider = new ApiFootballDotComService();   // was: new EspnService()
+```
+
+`shared/calendars.ts` keeps both providers' identifiers populated on every `CalendarConfig.source` (API-Football's `teamId`/`leagueId`/`season` and ESPN's `espnTeamId`/`espnPath`/`espnDates`) so a revert needs no further config changes. After reverting, the API-Football secrets must still be valid.
+
+Note: switching providers in either direction changes the fixture-ID scheme, so the per-calendar `reset-calendar` workflow must be re-run after the swap to avoid stale events from the previous provider's IDs.
+
+ESPN-specific limitations: the scoreboard endpoint does not return a group-stage matchday number, so WC 2026 group matches render as "Grupo A" (no "Nª rodada" suffix). Knockout matches with undecided participants are labeled with translated placeholder names (e.g., "Vencedor do Grupo A").
 
 ### Load-bearing details
 

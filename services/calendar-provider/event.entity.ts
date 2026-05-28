@@ -1,6 +1,12 @@
 import dayjs = require("dayjs");
 
-import { countryNamePt, flagForCountry } from "../../shared/country-flags";
+import {
+  countryNameByCode,
+  countryNamePt,
+  flagByCode,
+  flagForCountry,
+  translateKnockoutPlaceholder,
+} from "../../shared/country-flags";
 import { translateLeague } from "../../shared/leagues";
 import { translateRound } from "../../shared/rounds";
 import { groupForTeam } from "../../shared/world-cup-2026-groups";
@@ -94,10 +100,14 @@ export class Event implements IEvent {
     event._venue = [match.fixture.venue?.name, match.fixture.venue?.city]
       .filter(Boolean)
       .join(", ");
-    event._homeTeam = countryNamePt(match.teams.home.name);
-    event._awayTeam = countryNamePt(match.teams.away.name);
-    event._homeFlag = flagForCountry(match.teams.home.name);
-    event._awayFlag = flagForCountry(match.teams.away.name);
+    event._homeTeam = resolveTeamName(match.teams.home);
+    event._awayTeam = resolveTeamName(match.teams.away);
+    event._homeFlag =
+      flagByCode(match.teams.home.code) ||
+      flagForCountry(match.teams.home.name);
+    event._awayFlag =
+      flagByCode(match.teams.away.code) ||
+      flagForCountry(match.teams.away.name);
     event._homeGoals = match.goals.home;
     event._awayGoals = match.goals.away;
     event._homePenalty = match.score.penalty?.home ?? 0;
@@ -125,4 +135,12 @@ export class Event implements IEvent {
       timeZone: "UTC",
     };
   }
+}
+
+function resolveTeamName(team: { name: string; code?: string }): string {
+  const byCode = countryNameByCode(team.code);
+  if (byCode) return byCode;
+  const placeholder = translateKnockoutPlaceholder(team.name);
+  if (placeholder) return placeholder;
+  return countryNamePt(team.name);
 }

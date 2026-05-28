@@ -1,88 +1,89 @@
 // TEMPORARY — hardcoded team → group map for FIFA World Cup 2026.
 //
-// The /fixtures endpoint does not return the group letter, so until we wire up
-// a /standings call (or the tournament ends, whichever comes first), this file
-// is the single source of truth.
+// The scoreboard endpoint does not return the group letter, so until we wire
+// up a standings call (or the tournament ends, whichever comes first), this
+// file is the single source of truth.
 //
-// Keys are API-Football team IDs (visible in /fixtures?league=1&season=2026
-// → response[].teams.{home,away}.id). Values are the group letter A–L assigned
-// in the FIFA draw (December 2025).
+// Keys are ESPN team IDs (visible in
+// /sports/soccer/fifa.world/scoreboard → events[].competitions[0]
+//   .competitors[].team.id). Values are the group letter A–L assigned in the
+// FIFA draw (December 2025).
 //
 // When the map is empty or a team is missing, the round falls back to the
-// generic "Fase de grupos - Nª rodada" label — so it degrades safely.
+// generic "Fase de grupos" label — so it degrades safely.
 
 export const WORLD_CUP_2026_GROUPS: Record<number, string> = {
   // Group A
-  16: "A",   // Mexico
-  1531: "A", // South Africa
-  17: "A",   // South Korea
-  770: "A",  // Czech Republic
+  203: "A",    // Mexico
+  467: "A",    // South Africa
+  451: "A",    // South Korea
+  450: "A",    // Czechia
 
   // Group B
-  5529: "B", // Canada
-  1113: "B", // Bosnia & Herzegovina
-  1569: "B", // Qatar
-  15: "B",   // Switzerland
+  206: "B",    // Canada
+  452: "B",    // Bosnia-Herzegovina
+  4398: "B",   // Qatar
+  475: "B",    // Switzerland
 
   // Group C
-  6: "C",    // Brazil
-  31: "C",   // Morocco
-  2386: "C", // Haiti
-  1108: "C", // Scotland
+  205: "C",    // Brazil
+  2869: "C",   // Morocco
+  2654: "C",   // Haiti
+  580: "C",    // Scotland
 
   // Group D
-  2384: "D", // USA
-  2380: "D", // Paraguay
-  20: "D",   // Australia
-  777: "D",  // Türkiye
+  660: "D",    // United States
+  210: "D",    // Paraguay
+  628: "D",    // Australia
+  465: "D",    // Türkiye
 
   // Group E
-  25: "E",   // Germany
-  5530: "E", // Curaçao
-  1501: "E", // Ivory Coast
-  2382: "E", // Ecuador
+  481: "E",    // Germany
+  11678: "E",  // Curacao
+  4789: "E",   // Ivory Coast
+  209: "E",    // Ecuador
 
   // Group F
-  1118: "F", // Netherlands
-  12: "F",   // Japan
-  5: "F",    // Sweden
-  28: "F",   // Tunisia
+  449: "F",    // Netherlands
+  627: "F",    // Japan
+  466: "F",    // Sweden
+  659: "F",    // Tunisia
 
   // Group G
-  1: "G",    // Belgium
-  32: "G",   // Egypt
-  22: "G",   // Iran
-  4673: "G", // New Zealand
+  459: "G",    // Belgium
+  2620: "G",   // Egypt
+  469: "G",    // Iran
+  2666: "G",   // New Zealand
 
   // Group H
-  9: "H",    // Spain
-  1533: "H", // Cape Verde Islands
-  23: "H",   // Saudi Arabia
-  7: "H",    // Uruguay
+  164: "H",    // Spain
+  2597: "H",   // Cape Verde
+  655: "H",    // Saudi Arabia
+  212: "H",    // Uruguay
 
   // Group I
-  2: "I",    // France
-  13: "I",   // Senegal
-  1567: "I", // Iraq
-  1090: "I", // Norway
+  478: "I",    // France
+  654: "I",    // Senegal
+  4375: "I",   // Iraq
+  464: "I",    // Norway
 
   // Group J
-  26: "J",   // Argentina
-  1532: "J", // Algeria
-  775: "J",  // Austria
-  1548: "J", // Jordan
+  202: "J",    // Argentina
+  624: "J",    // Algeria
+  474: "J",    // Austria
+  2917: "J",   // Jordan
 
   // Group K
-  27: "K",   // Portugal
-  1508: "K", // Congo DR
-  1568: "K", // Uzbekistan
-  8: "K",    // Colombia
+  482: "K",    // Portugal
+  2850: "K",   // Congo DR
+  2570: "K",   // Uzbekistan
+  208: "K",    // Colombia
 
   // Group L
-  10: "L",   // England
-  3: "L",    // Croatia
-  1504: "L", // Ghana
-  11: "L",   // Panama
+  448: "L",    // England
+  477: "L",    // Croatia
+  4469: "L",   // Ghana
+  2659: "L",   // Panama
 };
 
 export function groupForTeam(teamId: number | null | undefined): string {

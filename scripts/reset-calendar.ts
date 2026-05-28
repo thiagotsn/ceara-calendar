@@ -1,5 +1,8 @@
 import { GoogleCalenderService } from "../services/calendar-provider/google-calendar.service";
+// Kept on hand: if the API-Football account is reinstated, swap the
+// `new EspnService()` call below back to `new ApiFootballDotComService()`.
 import { ApiFootballDotComService } from "../services/match-provider/api-football-dot-com.service";
+import { EspnService } from "../services/match-provider/espn.service";
 import { MatchToCalendarService } from "../services/match-to-calendar/match-to-calendar.service";
 import { CALENDARS, findCalendar, resolveCalendar } from "../shared/calendars";
 
@@ -26,7 +29,7 @@ async function main(): Promise<void> {
     keys: resolved.keys,
     serviceAccount: resolved.serviceAccount,
   });
-  const matchProvider = new ApiFootballDotComService();
+  const matchProvider = new EspnService();
   const service = new MatchToCalendarService(calendarProvider, matchProvider);
 
   await service.resetCalendar(config);

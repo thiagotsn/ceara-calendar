@@ -1,6 +1,22 @@
 export type MatchSource =
-  | { kind: "team"; teamId: number }
-  | { kind: "league"; leagueId: number; season: number };
+  | {
+      kind: "team";
+      // API-Football team ID — kept populated so reverting to API-Football
+      // is a one-line provider swap, not a config-and-secrets dance.
+      teamId: number;
+      // ESPN team ID — used by the active provider.
+      espnTeamId: number;
+    }
+  | {
+      kind: "league";
+      // API-Football league ID + season — kept populated, see note above.
+      leagueId: number;
+      season: number;
+      // ESPN scoreboard path (e.g. "fifa.world") and date range
+      // ("YYYYMMDD-YYYYMMDD") — used by the active provider.
+      espnPath: string;
+      espnDates: string;
+    };
 
 export interface CalendarEnvNames {
   calendarId: string;
@@ -36,7 +52,7 @@ export const CALENDARS: CalendarConfig[] = [
       keysJson: "CEARA_GOOGLE_KEYS_JSON",
       serviceAccount: "CEARA_GOOGLE_SERVICE_ACCOUNT",
     },
-    source: { kind: "team", teamId: 129 },
+    source: { kind: "team", teamId: 129, espnTeamId: 9969 },
   },
   {
     key: "world-cup-2026",
@@ -45,7 +61,13 @@ export const CALENDARS: CalendarConfig[] = [
       keysJson: "WORLD_CUP_2026_GOOGLE_KEYS_JSON",
       serviceAccount: "WORLD_CUP_2026_GOOGLE_SERVICE_ACCOUNT",
     },
-    source: { kind: "league", leagueId: 1, season: 2026 },
+    source: {
+      kind: "league",
+      leagueId: 1,
+      season: 2026,
+      espnPath: "fifa.world",
+      espnDates: "20260611-20260719",
+    },
   },
 ];
 

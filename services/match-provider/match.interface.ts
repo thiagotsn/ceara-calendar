@@ -43,6 +43,7 @@ interface ITeams {
 interface ITeam {
   id: number;
   name: string;
+  code?: string;
   winner: boolean;
 }
 
