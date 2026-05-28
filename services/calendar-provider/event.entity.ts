@@ -10,6 +10,7 @@ import {
 import { translateLeague } from "../../shared/leagues";
 import { translateRound } from "../../shared/rounds";
 import { groupForTeam } from "../../shared/world-cup-2026-groups";
+import { enrichWorldCup2026Venue } from "../../shared/world-cup-2026-venues";
 import MatchEnum from "../match-provider/match.enum";
 import { IMatch } from "../match-provider/match.interface";
 import { IEvent, IEventDateTime } from "./event.interface";
@@ -66,18 +67,18 @@ export class Event implements IEvent {
       : this._awayTeam;
 
     if (this._status === MatchEnum.Status.FINISHED_AFTER_PENALTY) {
-      return `${home} ${this._homeGoals} (${this._homePenalty}) X (${this._awayPenalty}) ${this._awayGoals} ${away}`;
+      return `${home} ${this._homeGoals} (${this._homePenalty}) × (${this._awayPenalty}) ${this._awayGoals} ${away}`;
     }
 
     if (MatchEnum.StatusFinished.includes(this._status)) {
-      return `${home} ${this._homeGoals} X ${this._awayGoals} ${away}`;
+      return `${home} ${this._homeGoals} × ${this._awayGoals} ${away}`;
     }
 
     if (MatchEnum.StatusExceptions.includes(this._status)) {
-      return `(${MatchEnum.StatusLabels[this._status]}) ${home} X ${away}`;
+      return `(${MatchEnum.StatusLabels[this._status]}) ${home} × ${away}`;
     }
 
-    return `${home} X ${away}`;
+    return `${home} × ${away}`;
   }
   public get source(): { title: string } {
     return { title: this._status };
@@ -97,9 +98,11 @@ export class Event implements IEvent {
       match.league?.round,
       groupForTeam(match.teams.home?.id)
     );
-    event._venue = [match.fixture.venue?.name, match.fixture.venue?.city]
-      .filter(Boolean)
-      .join(", ");
+    event._venue =
+      enrichWorldCup2026Venue(match.fixture.venue?.name) ??
+      [match.fixture.venue?.name, match.fixture.venue?.city]
+        .filter(Boolean)
+        .join(", ");
     event._homeTeam = resolveTeamName(match.teams.home);
     event._awayTeam = resolveTeamName(match.teams.away);
     event._homeFlag =
