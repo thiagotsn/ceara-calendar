@@ -45,14 +45,15 @@ export class ApiFootballDotComService implements IMatchProvider {
       errors?: unknown;
       message?: unknown;
     };
+
+    if (body.errors && Object.keys(body.errors as object).length > 0) {
+      throw new Error(
+        `API-Football returned errors: ${JSON.stringify(body.errors)}`
+      );
+    }
+
     const matches = body.response ?? [];
-    console.log(
-      `[api-football] ${response.status} results=${matches.length}` +
-        (body.errors && Object.keys(body.errors as object).length > 0
-          ? ` errors=${JSON.stringify(body.errors)}`
-          : "") +
-        (body.message ? ` message=${JSON.stringify(body.message)}` : "")
-    );
+    console.log(`[api-football] ${response.status} results=${matches.length}`);
     return matches;
   }
 }
