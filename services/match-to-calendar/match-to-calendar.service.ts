@@ -65,7 +65,7 @@ export class MatchToCalendarService implements IMatchToCalendarService {
     const eventsToAdd: Event[] = matches.map((match) => Event.create(match));
 
     for (const event of eventsToAdd) {
-      await this.calendarProvider.updateEvent(event);
+      await this.calendarProvider.addEvent(event);
     }
   }
 
