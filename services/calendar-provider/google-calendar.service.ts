@@ -58,12 +58,26 @@ export class GoogleCalenderService implements ICalendarProvider {
       },
     };
 
-    const result = await this.calendar.events.insert({
-      calendarId: this.calendarId,
-      requestBody: eventToAdd,
-    });
-
-    return result.data.id;
+    try {
+      const result = await this.calendar.events.insert({
+        calendarId: this.calendarId,
+        requestBody: eventToAdd,
+      });
+      return result.data.id;
+    } catch (err) {
+      // Google Calendar soft-deletes events and reserves the ID for ~6 months,
+      // so re-inserting with the same fixture ID returns 409. A PUT via
+      // events.update() resurrects the cancelled event with the new payload.
+      if (err?.code === 409 || err?.status === 409) {
+        const result = await this.calendar.events.update({
+          calendarId: this.calendarId,
+          requestBody: eventToAdd,
+          eventId: event.id,
+        });
+        return result.data.id;
+      }
+      throw err;
+    }
   }
 
   async updateEvent(event: IEvent): Promise<string> {
