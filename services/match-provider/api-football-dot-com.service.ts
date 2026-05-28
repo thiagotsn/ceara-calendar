@@ -23,23 +23,36 @@ export class ApiFootballDotComService implements IMatchProvider {
 
     const endpoint = process.env["API_FOOTBALL_ENDPOINT"] ?? "";
     const queryString = new URLSearchParams(params).toString();
-    const response = await fetch(
-      `https://${endpoint}/fixtures?${queryString}`,
-      {
-        headers: {
-          "x-rapidapi-key": process.env["API_FOOTBALL_KEY"] ?? "",
-          "x-rapidapi-host": endpoint,
-        },
-      }
-    );
+    const url = `https://${endpoint}/fixtures?${queryString}`;
+    console.log(`[api-football] GET ${url}`);
+    const response = await fetch(url, {
+      headers: {
+        "x-rapidapi-key": process.env["API_FOOTBALL_KEY"] ?? "",
+        "x-rapidapi-host": endpoint,
+      },
+    });
 
     if (!response.ok) {
+      const text = await response.text().catch(() => "<unreadable body>");
       throw new Error(
-        `API-Football request failed: ${response.status} ${response.statusText}`
+        `API-Football request failed: ${response.status} ${response.statusText} — ${text}`
       );
     }
 
-    const body = (await response.json()) as { response: IMatch[] };
-    return body.response;
+    const body = (await response.json()) as {
+      response?: IMatch[];
+      results?: number;
+      errors?: unknown;
+      message?: unknown;
+    };
+    const matches = body.response ?? [];
+    console.log(
+      `[api-football] ${response.status} results=${matches.length}` +
+        (body.errors && Object.keys(body.errors as object).length > 0
+          ? ` errors=${JSON.stringify(body.errors)}`
+          : "") +
+        (body.message ? ` message=${JSON.stringify(body.message)}` : "")
+    );
+    return matches;
   }
 }
