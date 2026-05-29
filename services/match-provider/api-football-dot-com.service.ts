@@ -3,16 +3,21 @@ import dayjs = require("dayjs");
 import { FixturesQuery, IMatchProvider } from "./match-provider.interface";
 import { IMatch } from "./match.interface";
 
+export type ApiFootballConfig =
+  | { kind: "team"; teamId: number }
+  | { kind: "league"; leagueId: number };
+
 export class ApiFootballDotComService implements IMatchProvider {
+  constructor(private readonly config: ApiFootballConfig) {}
+
   async getFixtures(query: FixturesQuery): Promise<IMatch[]> {
     const params: Record<string, string> = {
-      season: String(query.season),
+      season: String(query.season ?? ""),
     };
-    if (query.team !== undefined) {
-      params.team = String(query.team);
-    }
-    if (query.league !== undefined) {
-      params.league = String(query.league);
+    if (this.config.kind === "team") {
+      params.team = String(this.config.teamId);
+    } else {
+      params.league = String(this.config.leagueId);
     }
     if (query.from) {
       params.from = dayjs(query.from).format("YYYY-MM-DD");

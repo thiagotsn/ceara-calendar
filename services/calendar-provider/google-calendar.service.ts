@@ -19,23 +19,31 @@ export class GoogleCalenderService implements ICalendarProvider {
   }
 
   async getAllEvents(): Promise<IEvent[]> {
-    const result = await this.calendar.events.list({
-      calendarId: this.calendarId,
-    });
-
-    const events: IEvent[] = this.mapEvents(result.data.items);
-
-    return events;
+    return this.listAllPages({ calendarId: this.calendarId });
   }
 
   async getEvents(startDate: Date, endDate: Date): Promise<IEvent[]> {
-    const result = await this.calendar.events.list({
+    return this.listAllPages({
       calendarId: this.calendarId,
       timeMin: startDate.toISOString(),
       timeMax: endDate.toISOString(),
     });
+  }
 
-    const events: IEvent[] = this.mapEvents(result.data.items);
+  private async listAllPages(
+    params: calendar_v3.Params$Resource$Events$List
+  ): Promise<IEvent[]> {
+    const events: IEvent[] = [];
+    let pageToken: string | undefined;
+
+    do {
+      const result = await this.calendar.events.list({
+        ...params,
+        pageToken,
+      });
+      events.push(...this.mapEvents(result.data.items));
+      pageToken = result.data.nextPageToken || undefined;
+    } while (pageToken);
 
     return events;
   }

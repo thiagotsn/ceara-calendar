@@ -48,6 +48,7 @@ jobs:
           CALENDAR_KEY: ${{ inputs.calendar }}
           API_FOOTBALL_ENDPOINT: ${{ secrets.API_FOOTBALL_ENDPOINT }}
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          SPORTS_API_PRO_KEY: ${{ secrets.SPORTS_API_PRO_KEY }}
           CEARA_CALENDAR_ID: ${{ secrets.CEARA_CALENDAR_ID }}
           CEARA_GOOGLE_KEYS_JSON: ${{ secrets.CEARA_GOOGLE_KEYS_JSON }}
           CEARA_GOOGLE_SERVICE_ACCOUNT: ${{ secrets.CEARA_GOOGLE_SERVICE_ACCOUNT }}

@@ -1,14 +1,21 @@
+export type MatchProviderKind = "espn" | "sports-api-pro";
+
 export type MatchSource =
   | {
       kind: "team";
+      // Which fetch backend to use for this calendar.
+      provider: MatchProviderKind;
       // API-Football team ID — kept populated so reverting to API-Football
       // is a one-line provider swap, not a config-and-secrets dance.
       teamId: number;
-      // ESPN team ID — used by the active provider.
+      // ESPN team ID — used when provider === 'espn'.
       espnTeamId: number;
+      // SportsAPI Pro team ID — used when provider === 'sports-api-pro'.
+      sportsApiProTeamId?: number;
     }
   | {
       kind: "league";
+      provider: MatchProviderKind;
       // API-Football league ID + season — kept populated, see note above.
       leagueId: number;
       season: number;
@@ -44,16 +51,10 @@ export interface ResolvedCalendar {
   serviceAccount?: string;
 }
 
+// Order matters: each entry is updated sequentially. Keep the most reliable
+// providers first so a flaky one (currently SportsAPI Pro returns occasional
+// 502/503 on Ceará) can't starve the others if it stalls.
 export const CALENDARS: CalendarConfig[] = [
-  {
-    key: "ceara",
-    env: {
-      calendarId: "CEARA_CALENDAR_ID",
-      keysJson: "CEARA_GOOGLE_KEYS_JSON",
-      serviceAccount: "CEARA_GOOGLE_SERVICE_ACCOUNT",
-    },
-    source: { kind: "team", teamId: 129, espnTeamId: 9969 },
-  },
   {
     key: "world-cup-2026",
     env: {
@@ -63,10 +64,26 @@ export const CALENDARS: CalendarConfig[] = [
     },
     source: {
       kind: "league",
+      provider: "espn",
       leagueId: 1,
       season: 2026,
       espnPath: "fifa.world",
       espnDates: "20260611-20260719",
+    },
+  },
+  {
+    key: "ceara",
+    env: {
+      calendarId: "CEARA_CALENDAR_ID",
+      keysJson: "CEARA_GOOGLE_KEYS_JSON",
+      serviceAccount: "CEARA_GOOGLE_SERVICE_ACCOUNT",
+    },
+    source: {
+      kind: "team",
+      provider: "sports-api-pro",
+      teamId: 129,
+      espnTeamId: 9969,
+      sportsApiProTeamId: 2001,
     },
   },
 ];

@@ -63,17 +63,18 @@ interface EspnResponse {
   leagues?: Array<{ name?: string }>;
 }
 
+export type EspnConfig =
+  | { kind: "team"; teamId: number }
+  | { kind: "league"; path: string; dates: string };
+
 export class EspnService implements IMatchProvider {
+  constructor(private readonly config: EspnConfig) {}
+
   async getFixtures(query: FixturesQuery): Promise<IMatch[]> {
-    if (query.espnTeamId !== undefined) {
-      return this.fetchTeamMatches(query.espnTeamId, query.from, query.to);
+    if (this.config.kind === "team") {
+      return this.fetchTeamMatches(this.config.teamId, query.from, query.to);
     }
-    if (query.espnPath && query.espnDates) {
-      return this.fetchLeagueMatches(query.espnPath, query.espnDates);
-    }
-    throw new Error(
-      "ESPN provider requires either espnTeamId or (espnPath + espnDates) in the query"
-    );
+    return this.fetchLeagueMatches(this.config.path, this.config.dates);
   }
 
   private async fetchTeamMatches(

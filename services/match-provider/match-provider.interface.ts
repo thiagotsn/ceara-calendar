@@ -1,16 +1,10 @@
 import { IMatch } from './match.interface';
 
 export interface FixturesQuery {
-  season: number;
-  team?: number;
-  league?: number;
   from?: Date;
   to?: Date;
-
-  // ESPN-specific identifiers. Ignored by API-Football.
-  espnTeamId?: number;
-  espnPath?: string;
-  espnDates?: string;
+  // API-Football needs a season number; active providers ignore it.
+  season?: number;
 }
 
 export interface IMatchProvider {

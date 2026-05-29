@@ -83,22 +83,22 @@ scripts/{update,reset}-calendar.ts
 
 `MatchToCalendarService.updateCalendar(config)` and `resetCalendar(config)` dispatch on `config.source.kind`. The Google service takes the calendar ID at construction (`GoogleCalenderService.create(calendarId)`) — no more hidden coupling to a single calendar.
 
-### Match provider — active vs. dormant
+### Match provider — per-calendar selection
 
-The active provider is **ESPN** (`EspnService`, `services/match-provider/espn.service.ts`), which uses ESPN's free, unauthenticated soccer endpoints (`site.api.espn.com`). No env vars or secrets are needed.
+Each `CalendarConfig.source` carries a `provider: 'espn' | 'sports-api-pro'` discriminator. The scripts pick the right backend via `createMatchProvider(config.source)` (`services/match-provider/factory.ts`). Current assignment:
 
-`ApiFootballDotComService` is kept in the repo as a dormant fallback in case the API-Football account is reinstated. Reverting is a single-line swap in both scripts:
+- `ceara` → **SportsAPI Pro** (`SportsApiProService`, paid API at `v2.football.sportsapipro.com`). ESPN proved unreliable for Ceará fixtures. Reads `SPORTS_API_PRO_KEY` (shared env var). Calls `/api/teams/{id}/near-events` plus `/api/teams/{id}/events/next/0` and dedupes by event ID.
+- `world-cup-2026` → **ESPN** (`EspnService`, free unauthenticated endpoints at `site.api.espn.com`).
 
-```ts
-// scripts/{update,reset}-calendar.ts
-const matchProvider = new ApiFootballDotComService();   // was: new EspnService()
-```
+`ApiFootballDotComService` is kept in the repo as a dormant fallback in case the API-Football account is reinstated. To revive, point the relevant calendar's `provider` at it (after wiring it into the factory).
 
-`shared/calendars.ts` keeps both providers' identifiers populated on every `CalendarConfig.source` (API-Football's `teamId`/`leagueId`/`season` and ESPN's `espnTeamId`/`espnPath`/`espnDates`) so a revert needs no further config changes. After reverting, the API-Football secrets must still be valid.
+`shared/calendars.ts` keeps every provider's identifiers populated on each source (API-Football's `teamId`/`leagueId`/`season`, ESPN's `espnTeamId`/`espnPath`/`espnDates`, SportsAPI Pro's `sportsApiProTeamId`) so swapping providers is a one-field change. After swapping, the destination provider's secrets must be valid.
 
-Note: switching providers in either direction changes the fixture-ID scheme, so the per-calendar `reset-calendar` workflow must be re-run after the swap to avoid stale events from the previous provider's IDs.
+Note: switching providers changes the fixture-ID scheme, so the per-calendar `reset-calendar` workflow must be re-run after the swap to avoid stale events from the previous provider's IDs.
 
 ESPN-specific limitations: the scoreboard endpoint does not return a group-stage matchday number, so WC 2026 group matches render as "Grupo A" (no "Nª rodada" suffix). Knockout matches with undecided participants are labeled with translated placeholder names (e.g., "Vencedor do Grupo A").
+
+SportsAPI Pro-specific notes: `near-events` returns at most one previous + one upcoming event, and `events/next/0` returns the first page of upcoming matches. Past matches older than the most recent one are not re-fetched — they keep whatever data the calendar already has from the last sync that captured them. With the hourly cron, each match transitions through `nextEvent` → `previousEvent` while its final score is still fresh.
 
 ### Load-bearing details
 
