@@ -86,31 +86,43 @@ export class Event implements IEvent {
 
   private constructor() {}
 
-  public static create(match: IMatch): Event {
+  public static create(match: IMatch, nationalTeams: boolean = false): Event {
     const event: Event = new Event();
+
+    const venueFallback = [match.fixture.venue?.name, match.fixture.venue?.city]
+      .filter(Boolean)
+      .join(", ");
 
     event._id = match.fixture.id?.toString();
     event._status = (match.fixture.status?.short ??
       MatchEnum.Status.NOT_STARTED) as MatchEnum.Status;
     event._date = match.fixture.date;
-    event._league = translateLeague(match.league?.name);
-    event._round = translateRound(
-      match.league?.round,
-      groupForTeam(match.teams.home?.id)
-    );
-    event._venue =
-      enrichWorldCup2026Venue(match.fixture.venue?.name) ??
-      [match.fixture.venue?.name, match.fixture.venue?.city]
-        .filter(Boolean)
-        .join(", ");
-    event._homeTeam = resolveTeamName(match.teams.home);
-    event._awayTeam = resolveTeamName(match.teams.away);
-    event._homeFlag =
-      flagByCode(match.teams.home.code) ||
-      flagForCountry(match.teams.home.name);
-    event._awayFlag =
-      flagByCode(match.teams.away.code) ||
-      flagForCountry(match.teams.away.name);
+    event._league = nationalTeams
+      ? translateLeague(match.league?.name)
+      : match.league?.name ?? "";
+    event._round = nationalTeams
+      ? translateRound(
+          match.league?.round,
+          groupForTeam(match.teams.home?.id)
+        )
+      : match.league?.round ?? "";
+    event._venue = nationalTeams
+      ? enrichWorldCup2026Venue(match.fixture.venue?.name) ?? venueFallback
+      : venueFallback;
+    event._homeTeam = nationalTeams
+      ? resolveTeamName(match.teams.home)
+      : match.teams.home.name ?? "";
+    event._awayTeam = nationalTeams
+      ? resolveTeamName(match.teams.away)
+      : match.teams.away.name ?? "";
+    event._homeFlag = nationalTeams
+      ? flagByCode(match.teams.home.code) ||
+        flagForCountry(match.teams.home.name)
+      : "";
+    event._awayFlag = nationalTeams
+      ? flagByCode(match.teams.away.code) ||
+        flagForCountry(match.teams.away.name)
+      : "";
     event._homeGoals = match.goals.home;
     event._awayGoals = match.goals.away;
     event._homePenalty = match.score.penalty?.home ?? 0;
