@@ -11,7 +11,7 @@
     "test": "echo \"No tests yet...\""
   },
   "dependencies": {
-    "dayjs": "^1.11.20",
+    "dayjs": "^1.11.21",
     "googleapis": "^173.0.0"
   },
   "devDependencies": {
