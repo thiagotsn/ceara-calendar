@@ -30,7 +30,7 @@ export class MatchToCalendarService implements IMatchToCalendarService {
     const window = await this.fetchSyncWindow(config.source);
 
     const eventsToUpdate: IEvent[] = window.matches.map((match) =>
-      Event.create(match)
+      Event.create(match, config.source.nationalTeams)
     );
 
     const eventsInCalendar: IEvent[] = await this.calendarProvider.getEvents(
@@ -62,7 +62,9 @@ export class MatchToCalendarService implements IMatchToCalendarService {
       config.source
     );
 
-    const eventsToAdd: Event[] = matches.map((match) => Event.create(match));
+    const eventsToAdd: Event[] = matches.map((match) =>
+      Event.create(match, config.source.nationalTeams)
+    );
 
     for (const event of eventsToAdd) {
       await this.calendarProvider.addEvent(event);

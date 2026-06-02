@@ -5,6 +5,10 @@ export type MatchSource =
       kind: "team";
       // Which fetch backend to use for this calendar.
       provider: MatchProviderKind;
+      // When true, render with flag emojis, Portuguese country names, league/round
+      // translation, and WC 2026 venue enrichment. Off for club calendars where
+      // raw provider data is correct as-is.
+      nationalTeams: boolean;
       // API-Football team ID — kept populated so reverting to API-Football
       // is a one-line provider swap, not a config-and-secrets dance.
       teamId: number;
@@ -16,6 +20,7 @@ export type MatchSource =
   | {
       kind: "league";
       provider: MatchProviderKind;
+      nationalTeams: boolean;
       // API-Football league ID + season — kept populated, see note above.
       leagueId: number;
       season: number;
@@ -65,6 +70,7 @@ export const CALENDARS: CalendarConfig[] = [
     source: {
       kind: "league",
       provider: "espn",
+      nationalTeams: true,
       leagueId: 1,
       season: 2026,
       espnPath: "fifa.world",
@@ -81,6 +87,7 @@ export const CALENDARS: CalendarConfig[] = [
     source: {
       kind: "team",
       provider: "sports-api-pro",
+      nationalTeams: false,
       teamId: 129,
       espnTeamId: 9969,
       sportsApiProTeamId: 2001,
