@@ -26,6 +26,8 @@ export class Event implements IEvent {
   private _awayTeam: string;
   private _homeFlag: string;
   private _awayFlag: string;
+  private _homeFeeders: string;
+  private _awayFeeders: string;
   private _homeGoals: number;
   private _awayGoals: number;
   private _homePenalty: number;
@@ -59,10 +61,14 @@ export class Event implements IEvent {
     return description;
   }
   public get summary(): string {
-    const home = this._homeFlag
+    const home = this._homeFeeders
+      ? this._homeFeeders
+      : this._homeFlag
       ? `${this._homeTeam} ${this._homeFlag}`
       : this._homeTeam;
-    const away = this._awayFlag
+    const away = this._awayFeeders
+      ? this._awayFeeders
+      : this._awayFlag
       ? `${this._awayFlag} ${this._awayTeam}`
       : this._awayTeam;
 
@@ -123,6 +129,12 @@ export class Event implements IEvent {
       ? flagByCode(match.teams.away.code) ||
         flagForCountry(match.teams.away.name)
       : "";
+    event._homeFeeders = nationalTeams
+      ? renderFeeders(match.teams.home.feeders)
+      : "";
+    event._awayFeeders = nationalTeams
+      ? renderFeeders(match.teams.away.feeders)
+      : "";
     event._homeGoals = match.goals.home;
     event._awayGoals = match.goals.away;
     event._homePenalty = match.score.penalty?.home ?? 0;
@@ -158,4 +170,24 @@ function resolveTeamName(team: { name: string; code?: string }): string {
   const placeholder = translateKnockoutPlaceholder(team.name);
   if (placeholder) return placeholder;
   return countryNamePt(team.name);
+}
+
+// For an undecided knockout slot, render its directly-feeding game's two
+// participants joined by " OU ": a flag once the team is decided, otherwise the
+// participant's Portuguese placeholder text. Returns "" when there are no
+// feeders so the slot keeps its own placeholder label.
+function renderFeeders(
+  feeders: Array<{ name: string; code?: string; decided: boolean }> | undefined
+): string {
+  if (!feeders || feeders.length === 0) return "";
+  return feeders
+    .map((f) => {
+      if (f.decided) {
+        return flagByCode(f.code) || flagForCountry(f.name) || f.name;
+      }
+      return (
+        translateKnockoutPlaceholder(f.name) || countryNamePt(f.name) || f.name
+      );
+    })
+    .join(" OU ");
 }

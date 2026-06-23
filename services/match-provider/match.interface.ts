@@ -45,6 +45,17 @@ interface ITeam {
   name: string;
   code?: string;
   winner: boolean;
+  // For undecided knockout slots: the two participants of the directly-feeding
+  // game. Each is a concrete team (`decided: true`) or a placeholder whose
+  // `name` is the raw provider string. Populated only when at least one is
+  // decided; absent otherwise.
+  feeders?: IFeeder[];
+}
+
+interface IFeeder {
+  name: string;
+  code?: string;
+  decided: boolean;
 }
 
 interface IGoals {

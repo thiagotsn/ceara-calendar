@@ -92,7 +92,7 @@ export class EspnService implements IMatchProvider {
     const events = [...(past.events ?? []), ...(future.events ?? [])];
     const filtered = events.filter((event) => withinWindow(event.date, from, to));
     const matches = filtered
-      .map((event) => mapEspnEventToMatch(event, undefined))
+      .map((event) => mapEspnEventToMatch(event, undefined, undefined))
       .filter((m): m is IMatch => m !== null);
 
     // De-dupe by fixture ID — the two endpoints have disjoint sets in
@@ -109,8 +109,10 @@ export class EspnService implements IMatchProvider {
     const url = `${ESPN_BASE}/${espnPath}/scoreboard?dates=${espnDates}&limit=200`;
     const body = await this.fetchJson(url);
     const fallbackLeagueName = body.leagues?.[0]?.name;
-    return (body.events ?? [])
-      .map((event) => mapEspnEventToMatch(event, fallbackLeagueName))
+    const events = body.events ?? [];
+    const gameIndex = buildGameIndex(events);
+    return events
+      .map((event) => mapEspnEventToMatch(event, fallbackLeagueName, gameIndex))
       .filter((m): m is IMatch => m !== null);
   }
 
@@ -133,7 +135,8 @@ export class EspnService implements IMatchProvider {
 
 function mapEspnEventToMatch(
   event: EspnEvent,
-  fallbackLeagueName: string | undefined
+  fallbackLeagueName: string | undefined,
+  gameIndex: GameIndex | undefined
 ): IMatch | null {
   const id = parseInt(event.id ?? "", 10);
   if (!Number.isFinite(id)) return null;
@@ -146,6 +149,15 @@ function mapEspnEventToMatch(
 
   const statusName = competition.status?.type?.name;
   const statusShort = STATUS_BY_NAME[statusName ?? ""] ?? MatchEnum.Status.NOT_STARTED;
+
+  const homeTeam = competitorToTeam(home);
+  const awayTeam = competitorToTeam(away);
+  if (gameIndex) {
+    const homeFeeders = resolveFeeders(home, gameIndex);
+    if (homeFeeders) homeTeam.feeders = homeFeeders;
+    const awayFeeders = resolveFeeders(away, gameIndex);
+    if (awayFeeders) awayTeam.feeders = awayFeeders;
+  }
 
   return {
     fixture: {
@@ -169,8 +181,8 @@ function mapEspnEventToMatch(
       round: event.season?.slug ?? "",
     },
     teams: {
-      home: competitorToTeam(home),
-      away: competitorToTeam(away),
+      home: homeTeam,
+      away: awayTeam,
     },
     goals: {
       home: parseScore(home.score),
@@ -195,7 +207,7 @@ function splitHomeAway(competitors: EspnCompetitor[]): {
   };
 }
 
-function competitorToTeam(competitor: EspnCompetitor) {
+function competitorToTeam(competitor: EspnCompetitor): IMatch["teams"]["home"] {
   const team = competitor.team ?? {};
   return {
     id: parseInt(team.id ?? "", 10) || 0,
@@ -203,6 +215,97 @@ function competitorToTeam(competitor: EspnCompetitor) {
     code: team.abbreviation ?? undefined,
     winner: false,
   };
+}
+
+// --- Knockout bracket resolution -------------------------------------------
+//
+// ESPN encodes the bracket in competitor display names: a knockout slot is a
+// placeholder like "Semifinal 1 Winner" that points to game N of an earlier
+// round. Within a round, game N == the event's rank when that round's events
+// are sorted by numeric id. We index that mapping, then for an undecided slot
+// surface the two participants of its directly-feeding game (one level only).
+
+type GameIndex = Map<string, EspnEvent[]>;
+
+// "Round of 32 1 Winner" / "Quarterfinal 2 Winner" / "Semifinal 1 Loser" → the
+// season slug + game number of the feeding game.
+const PLACEHOLDER_ROUND_BY_LABEL: Record<string, string> = {
+  "Round of 32": "round-of-32",
+  "Round of 16": "round-of-16",
+  Quarterfinal: "quarterfinals",
+  Semifinal: "semifinals",
+};
+
+function buildGameIndex(events: EspnEvent[]): GameIndex {
+  const index: GameIndex = new Map();
+  for (const event of events) {
+    const slug = event.season?.slug;
+    if (!slug) continue;
+    const list = index.get(slug) ?? [];
+    list.push(event);
+    index.set(slug, list);
+  }
+  for (const list of index.values()) {
+    list.sort((a, b) => parseInt(a.id ?? "", 10) - parseInt(b.id ?? "", 10));
+  }
+  return index;
+}
+
+function parseGamePlaceholder(
+  name: string | undefined
+): { slug: string; n: number } | null {
+  if (!name) return null;
+  const m = name
+    .trim()
+    .match(/^(Round of 32|Round of 16|Quarterfinal|Semifinal) (\d+) (?:Winner|Loser)$/);
+  if (!m) return null;
+  const slug = PLACEHOLDER_ROUND_BY_LABEL[m[1]];
+  if (!slug) return null;
+  return { slug, n: parseInt(m[2], 10) };
+}
+
+function isGroupPlaceholder(name: string | undefined): boolean {
+  if (!name) return false;
+  const trimmed = name.trim();
+  return /^Group /.test(trimmed) || /^Third Place Group /.test(trimmed);
+}
+
+// A competitor is "decided" when it's a real team — not a game-winner
+// placeholder and not a group placeholder.
+function isDecided(competitor: EspnCompetitor): boolean {
+  const name = competitor.team?.displayName;
+  if (!name) return false;
+  return !parseGamePlaceholder(name) && !isGroupPlaceholder(name);
+}
+
+function competitorToFeeder(
+  competitor: EspnCompetitor
+): { name: string; code?: string; decided: boolean } {
+  const team = competitor.team ?? {};
+  return {
+    name: team.displayName ?? "",
+    code: team.abbreviation ?? undefined,
+    decided: isDecided(competitor),
+  };
+}
+
+// For an undecided knockout slot, return the two participants of its directly-
+// feeding game — but only when at least one is decided. Returns null (slot keeps
+// its own placeholder text) when the feeding game is missing or fully undecided.
+function resolveFeeders(
+  competitor: EspnCompetitor,
+  gameIndex: GameIndex
+): Array<{ name: string; code?: string; decided: boolean }> | null {
+  const ref = parseGamePlaceholder(competitor.team?.displayName);
+  if (!ref) return null;
+  const game = gameIndex.get(ref.slug)?.[ref.n - 1];
+  if (!game) return null;
+  const competitors = game.competitions?.[0]?.competitors ?? [];
+  const { home, away } = splitHomeAway(competitors);
+  if (!home || !away) return null;
+  const feeders = [competitorToFeeder(home), competitorToFeeder(away)];
+  if (!feeders.some((f) => f.decided)) return null;
+  return feeders;
 }
 
 function parseScore(
