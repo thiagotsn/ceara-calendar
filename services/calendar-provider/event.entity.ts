@@ -107,9 +107,9 @@ export class Event implements IEvent {
       ? translateLeague(match.league?.name)
       : match.league?.name ?? "";
     event._round = nationalTeams
-      ? translateRound(
-          match.league?.round,
-          groupForTeam(match.teams.home?.id)
+      ? appendGameNumber(
+          translateRound(match.league?.round, groupForTeam(match.teams.home?.id)),
+          match.league?.gameNumber
         )
       : match.league?.round ?? "";
     event._venue = nationalTeams
@@ -162,6 +162,13 @@ export class Event implements IEvent {
       timeZone: "UTC",
     };
   }
+}
+
+// Append "- Jogo N" to a knockout round label so feeder placeholders such as
+// "Vencedor do Jogo 5 das 16-avos" can be matched to the actual game.
+function appendGameNumber(round: string, gameNumber: number | undefined): string {
+  if (!round || gameNumber == null) return round;
+  return `${round} - Jogo ${gameNumber}`;
 }
 
 function resolveTeamName(team: { name: string; code?: string }): string {

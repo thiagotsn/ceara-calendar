@@ -33,6 +33,10 @@ interface ILeague {
   country: string;
   season: string;
   round: string;
+  // Game number within a numbered knockout round (e.g. 5 → "Jogo 5"), so a
+  // feeder placeholder like "Vencedor do Jogo 5 das 16-avos" can be matched to
+  // the actual game. Set only for rounds referenced by number; absent otherwise.
+  gameNumber?: number;
 }
 
 interface ITeams {

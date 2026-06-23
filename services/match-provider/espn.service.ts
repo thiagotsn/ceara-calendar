@@ -1,3 +1,4 @@
+import { round32GameNumber } from "../../shared/world-cup-2026-bracket";
 import MatchEnum from "./match.enum";
 import { FixturesQuery, IMatchProvider } from "./match-provider.interface";
 import { IMatch } from "./match.interface";
@@ -152,11 +153,13 @@ function mapEspnEventToMatch(
 
   const homeTeam = competitorToTeam(home);
   const awayTeam = competitorToTeam(away);
+  let gameNumber: number | undefined;
   if (gameIndex) {
     const homeFeeders = resolveFeeders(home, gameIndex);
     if (homeFeeders) homeTeam.feeders = homeFeeders;
     const awayFeeders = resolveFeeders(away, gameIndex);
     if (awayFeeders) awayTeam.feeders = awayFeeders;
+    gameNumber = gameNumberOf(event, gameIndex) ?? undefined;
   }
 
   return {
@@ -179,6 +182,7 @@ function mapEspnEventToMatch(
       country: "",
       season: "",
       round: event.season?.slug ?? "",
+      gameNumber,
     },
     teams: {
       home: homeTeam,
@@ -225,7 +229,10 @@ function competitorToTeam(competitor: EspnCompetitor): IMatch["teams"]["home"] {
 // are sorted by numeric id. We index that mapping, then for an undecided slot
 // surface the two participants of its directly-feeding game (one level only).
 
-type GameIndex = Map<string, EspnEvent[]>;
+// Per round slug: game number → event. For most rounds the game number equals
+// the event's rank by id; the Round of 32 is numbered by FIFA match order
+// instead (see shared/world-cup-2026-bracket).
+type GameIndex = Map<string, Map<number, EspnEvent>>;
 
 // "Round of 32 1 Winner" / "Quarterfinal 2 Winner" / "Semifinal 1 Loser" → the
 // season slug + game number of the feeding game.
@@ -237,18 +244,55 @@ const PLACEHOLDER_ROUND_BY_LABEL: Record<string, string> = {
 };
 
 function buildGameIndex(events: EspnEvent[]): GameIndex {
-  const index: GameIndex = new Map();
+  const bySlug = new Map<string, EspnEvent[]>();
   for (const event of events) {
     const slug = event.season?.slug;
     if (!slug) continue;
-    const list = index.get(slug) ?? [];
+    const list = bySlug.get(slug) ?? [];
     list.push(event);
-    index.set(slug, list);
+    bySlug.set(slug, list);
   }
-  for (const list of index.values()) {
-    list.sort((a, b) => parseInt(a.id ?? "", 10) - parseInt(b.id ?? "", 10));
+
+  const index: GameIndex = new Map();
+  for (const [slug, list] of bySlug) {
+    const numbered = new Map<number, EspnEvent>();
+    if (slug === "round-of-32") {
+      for (const event of list) {
+        const n = round32GameNumber(parseInt(event.id ?? "", 10));
+        if (n != null) numbered.set(n, event);
+      }
+    } else {
+      list
+        .sort((a, b) => parseInt(a.id ?? "", 10) - parseInt(b.id ?? "", 10))
+        .forEach((event, i) => numbered.set(i + 1, event));
+    }
+    index.set(slug, numbered);
   }
   return index;
+}
+
+// Rounds whose games are referenced by number in feeder placeholders, so a
+// "Jogo N" label is meaningful for cross-referencing.
+const NUMBERED_ROUNDS = new Set([
+  "round-of-32",
+  "round-of-16",
+  "quarterfinals",
+  "semifinals",
+]);
+
+// This event's own game number within its round (the reverse of the index).
+function gameNumberOf(
+  event: EspnEvent,
+  gameIndex: GameIndex
+): number | null {
+  const slug = event.season?.slug;
+  if (!slug || !NUMBERED_ROUNDS.has(slug)) return null;
+  const round = gameIndex.get(slug);
+  if (!round) return null;
+  for (const [n, e] of round) {
+    if (e.id === event.id) return n;
+  }
+  return null;
 }
 
 function parseGamePlaceholder(
@@ -298,7 +342,7 @@ function resolveFeeders(
 ): Array<{ name: string; code?: string; decided: boolean }> | null {
   const ref = parseGamePlaceholder(competitor.team?.displayName);
   if (!ref) return null;
-  const game = gameIndex.get(ref.slug)?.[ref.n - 1];
+  const game = gameIndex.get(ref.slug)?.get(ref.n);
   if (!game) return null;
   const competitors = game.competitions?.[0]?.competitors ?? [];
   const { home, away } = splitHomeAway(competitors);
