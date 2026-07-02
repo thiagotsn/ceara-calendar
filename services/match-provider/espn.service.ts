@@ -5,12 +5,14 @@ import { IMatch } from "./match.interface";
 
 const ESPN_BASE = "https://site.api.espn.com/apis/site/v2/sports/soccer";
 
-// `STATUS_SCHEDULED`, `STATUS_FULL_TIME`, and `STATUS_FINAL_PEN` are the only
-// statuses observed in the sample responses; the rest are defensive entries
-// for ESPN's documented enum so unexpected statuses don't silently degrade.
+// `STATUS_SCHEDULED`, `STATUS_FULL_TIME`, `STATUS_FINAL_AET`, and
+// `STATUS_FINAL_PEN` are the statuses observed in real responses; the rest are
+// defensive entries for ESPN's documented enum so unexpected statuses don't
+// silently degrade.
 const STATUS_BY_NAME: Record<string, MatchEnum.Status> = {
   STATUS_SCHEDULED: MatchEnum.Status.NOT_STARTED,
   STATUS_FULL_TIME: MatchEnum.Status.FINISHED,
+  STATUS_FINAL_AET: MatchEnum.Status.FINISHED_AFTER_EXTRA_TIME,
   STATUS_FINAL_PEN: MatchEnum.Status.FINISHED_AFTER_PENALTY,
   STATUS_POSTPONED: MatchEnum.Status.POSTPONED,
   STATUS_CANCELED: MatchEnum.Status.CANCELLED,
