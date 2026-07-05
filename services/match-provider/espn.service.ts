@@ -1,4 +1,7 @@
-import { round32GameNumber } from "../../shared/world-cup-2026-bracket";
+import {
+  round16GameNumber,
+  round32GameNumber,
+} from "../../shared/world-cup-2026-bracket";
 import MatchEnum from "./match.enum";
 import { FixturesQuery, IMatchProvider } from "./match-provider.interface";
 import { IMatch } from "./match.interface";
@@ -231,10 +234,20 @@ function competitorToTeam(competitor: EspnCompetitor): IMatch["teams"]["home"] {
 // are sorted by numeric id. We index that mapping, then for an undecided slot
 // surface the two participants of its directly-feeding game (one level only).
 
-// Per round slug: game number → event. For most rounds the game number equals
-// the event's rank by id; the Round of 32 is numbered by FIFA match order
-// instead (see shared/world-cup-2026-bracket).
+// Per round slug: game number → event. The Round of 32 and Round of 16 are
+// numbered by FIFA match order via hardcoded maps (their id-rank does NOT match
+// ESPN's placeholder numbering — see shared/world-cup-2026-bracket). The
+// Quarterfinals and Semifinals happen to be numbered in id order, so they fall
+// back to rank-by-id.
 type GameIndex = Map<string, Map<number, EspnEvent>>;
+
+// Rounds whose ESPN game number is the FIFA match number, not the event's rank
+// by id. `hardcodedGameNumber` resolves the id → number for these.
+function hardcodedGameNumber(slug: string, eventId: number): number | null {
+  if (slug === "round-of-32") return round32GameNumber(eventId);
+  if (slug === "round-of-16") return round16GameNumber(eventId);
+  return null;
+}
 
 // "Round of 32 1 Winner" / "Quarterfinal 2 Winner" / "Semifinal 1 Loser" → the
 // season slug + game number of the feeding game.
@@ -258,9 +271,9 @@ function buildGameIndex(events: EspnEvent[]): GameIndex {
   const index: GameIndex = new Map();
   for (const [slug, list] of bySlug) {
     const numbered = new Map<number, EspnEvent>();
-    if (slug === "round-of-32") {
+    if (slug === "round-of-32" || slug === "round-of-16") {
       for (const event of list) {
-        const n = round32GameNumber(parseInt(event.id ?? "", 10));
+        const n = hardcodedGameNumber(slug, parseInt(event.id ?? "", 10));
         if (n != null) numbered.set(n, event);
       }
     } else {

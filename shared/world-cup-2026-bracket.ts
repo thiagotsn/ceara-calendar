@@ -39,3 +39,34 @@ export function round32GameNumber(
   if (eventId == null) return null;
   return WORLD_CUP_2026_ROUND_OF_32_GAME_NUMBER[eventId] ?? null;
 }
+
+// Hardcoded FIFA World Cup 2026 Round-of-16 game numbering.
+//
+// Same problem as the Round of 32: ESPN references R16 feeders by game number
+// in placeholder names ("Round of 16 1 Winner"), and that number is the FIFA
+// match number (M89–M96 → games 1–8), NOT the event's rank by id. Trusting
+// id-rank pairs the wrong R16 game into a Quarterfinal slot — e.g. a QF's
+// "Round of 16 1 Winner" would resolve to the lowest-id R16 event (Canada v
+// Morocco) instead of the real M89 game (Paraguay v France), so once Morocco
+// advanced its QF rendered "Marrocos OU Canadá" instead of "França OU Paraguai".
+//
+// Keys are ESPN scoreboard event ids; values are the FIFA-aligned R16 game
+// number (1–8) = matchNumber − 88. The feeding R32 winners are noted for
+// traceability. Resolved from ESPN's core-API `matchNumber` field.
+export const WORLD_CUP_2026_ROUND_OF_16_GAME_NUMBER: Record<number, number> = {
+  760503: 1, // M89: W74 v W77
+  760502: 2, // M90: W73 v W75
+  760504: 3, // M91: W76 v W78
+  760505: 4, // M92: W79 v W80
+  760506: 5, // M93: W83 v W84
+  760507: 6, // M94: W81 v W82
+  760509: 7, // M95: W86 v W88
+  760508: 8, // M96: W85 v W87
+};
+
+export function round16GameNumber(
+  eventId: number | null | undefined
+): number | null {
+  if (eventId == null) return null;
+  return WORLD_CUP_2026_ROUND_OF_16_GAME_NUMBER[eventId] ?? null;
+}
