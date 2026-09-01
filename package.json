@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "dayjs": "^1.11.23",
-    "googleapis": "^173.0.0"
+    "googleapis": "^176.0.0"
   },
   "devDependencies": {
     "@types/node": "^26.4.0",
